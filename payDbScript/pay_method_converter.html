@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>SHA-256</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css" integrity="sha512-3pIirOrwegjM6erE5gPSwkUzO+3cTjpnV9lexlNZqvupR64iZBnOOTiiLPb9M36zpMScbmUNIcHUqKD47M719g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/sha256.js"></script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js" integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+
+<body>
+  <form name="form">
+    <input type="file" name="csv" accept=".csv,.txt" onchange="changeFile()"/>
+  </form>
+
+  <div id="output">
+
+  </div>
+
+
+  <script>
+    const copy = (text) => {
+      navigator.clipboard.writeText(text)
+              .then(() => {
+                toastr.success("copy success");
+              })
+    }
+
+    const changeFile = async () => {
+      const file = document.form.csv.files[0];
+
+      const readFile = (file) => new Promise( (resolve, reject) => {
+          let reader = new FileReader();
+          reader.onload = (e) => resolve(reader.result);
+
+          reader.readAsText(file);
+      });
+
+      let output = "";
+
+      const csvText = await readFile(file);
+      const rows = csvText.split("\r\n");
+      for(const row of rows){
+        const id = row.substring(0, row.indexOf("("));
+        const name = row.substring(row.indexOf("(")+1, row.length-1);
+        let dvcd = "";
+
+        if(id==="card"){
+          dvcd = "00301";
+        }
+        else if(name.indexOf("페이")!=-1){
+          dvcd = "00302";
+        }
+        else if(name.indexOf("상품권")!=-1 || name.indexOf("해피머니")!=-1){
+          dvcd = "00303";
+        }
+        else{
+          dvcd = "00304";
+        }
+        
+
+        output += `INSERT INTO ENCLICK.dbo.PAY_METHOD (PAY_METHOD_ID, COMP_CD, PAY_METHOD_DVCD, REGI_DT, UPDA_DT, PAY_METHOD_NM) VALUES('${id}', '', '${dvcd}', getdate(), '', '${name}');\n\n`;
+      }
+
+      document.getElementById("output").innerText = output;
+      copy(output);
+    }
+  </script>
+</body>
+
+</html>
